@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UNC Reserved Parking Tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>UNC Reserved Parking Tracker</h1>
+      <p>GitHub Pages version: reports are saved in your browser and can be shared/exported.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Report a reserved lot</h2>
+        <form id="reservationForm" class="grid">
+          <label>
+            Parking lot name
+            <input id="lotName" required placeholder="e.g., Bell Tower Deck" />
+          </label>
+          <label>
+            Reserved until (optional)
+            <input id="reservedUntil" type="datetime-local" />
+          </label>
+          <label>
+            Reporter (optional)
+            <input id="reporter" placeholder="Your name" />
+          </label>
+          <label class="span-2">
+            Note (optional)
+            <input id="note" placeholder="e.g., Reserved for basketball event" />
+          </label>
+          <button type="submit">Add Report</button>
+        </form>
+        <div class="toolbar">
+          <button id="exportBtn" type="button">Export Reports (JSON)</button>
+          <label class="import-label">
+            Import Reports
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+          <button id="clearAllBtn" type="button" class="danger">Clear All</button>
+        </div>
+        <p id="formMessage" class="note"></p>
+      </section>
+
+      <section class="card">
+        <h2>Reported reserved lots</h2>
+        <p class="note">Only user-reported lots are listed. Each entry can be reviewed as accurate/inaccurate by others.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Lot</th>
+                <th>Reserved Until</th>
+                <th>Reporter</th>
+                <th>Note</th>
+                <th>Reviews</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reservedBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
