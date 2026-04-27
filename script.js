@@ -1,164 +1,177 @@
-const STORAGE_KEY = "unc_reserved_reports_v1";
+const lots = [
+  { name: "Bell Tower Deck", rule: "paid", eventSensitive: true, notes: "Visitor pay parking; event controls may apply." },
+  { name: "Boshamer Stadium Lot", rule: "permit", eventSensitive: true, notes: "Often event-controlled around athletics." },
+  { name: "Bowles Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Brauer Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Business School Deck", rule: "paid", eventSensitive: true, notes: "Pay parking for many visitors." },
+  { name: "Cobb Deck", rule: "paid", eventSensitive: true, notes: "Visitor pay option; event reservations possible." },
+  { name: "Country Club Lot", rule: "permit", eventSensitive: true, notes: "Frequently impacted by game-day operations." },
+  { name: "Craige Deck", rule: "permit", eventSensitive: false, notes: "Permit daytime, broader access evenings." },
+  { name: "Dean Smith Center (Cardinal Lot)", rule: "paid", eventSensitive: true, notes: "Often sold/reserved for athletics." },
+  { name: "Dogwood Deck", rule: "paid", eventSensitive: false, notes: "Typical visitor-pay deck." },
+  { name: "Ehringhaus Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Frank Porter Graham Deck", rule: "paid", eventSensitive: false, notes: "Visitor-pay friendly location." },
+  { name: "Friday Center Park & Ride", rule: "permit", eventSensitive: false, notes: "Park-and-ride permit zone." },
+  { name: "Hibbard Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Jackson Deck", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Kenan Football Center Lots", rule: "permit", eventSensitive: true, notes: "Event-sensitive near athletics." },
+  { name: "Koury Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Manning Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "McCauley Deck", rule: "permit", eventSensitive: false, notes: "Permit daytime, typically open later." },
+  { name: "Morehead Planetarium Lot", rule: "paid", eventSensitive: true, notes: "Visitor pay and occasional reservations." },
+  { name: "Morrison Residence Hall Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Nash Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Park & Ride RR Lot", rule: "permit", eventSensitive: false, notes: "Commuter-focused permit lot." },
+  { name: "Rams Head Deck", rule: "paid", eventSensitive: true, notes: "Visitor pay, can be event-reserved." },
+  { name: "Ridge Road Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Skipper Bowles Drive Lot", rule: "permit", eventSensitive: true, notes: "May be controlled during major events." },
+  { name: "South Road Deck", rule: "paid", eventSensitive: false, notes: "Pay parking for many visitors." },
+  { name: "Stadium Drive Lot", rule: "permit", eventSensitive: true, notes: "Likely restricted during sports events." },
+  { name: "Swain Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Tarantino Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "University Baptist Lot", rule: "permit", eventSensitive: false, notes: "Permit daytime control." },
+  { name: "Wilson Deck", rule: "paid", eventSensitive: true, notes: "Visitor pay; may be event-managed." },
+];
+
+const overrides = new Map();
 
 const els = {
-  form: document.getElementById("reservationForm"),
-  lotName: document.getElementById("lotName"),
-  reservedUntil: document.getElementById("reservedUntil"),
-  reporter: document.getElementById("reporter"),
-  note: document.getElementById("note"),
-  formMessage: document.getElementById("formMessage"),
-  reservedBody: document.getElementById("reservedBody"),
-  exportBtn: document.getElementById("exportBtn"),
-  importInput: document.getElementById("importInput"),
-  clearAllBtn: document.getElementById("clearAllBtn"),
+  dateInput: document.getElementById("dateInput"),
+  timeInput: document.getElementById("timeInput"),
+  userType: document.getElementById("userType"),
+  permitStatus: document.getElementById("permitStatus"),
+  eventMode: document.getElementById("eventMode"),
+  lotsBody: document.getElementById("lotsBody"),
+  summary: document.getElementById("summary"),
+  recalcBtn: document.getElementById("recalcBtn"),
+  overrideForm: document.getElementById("overrideForm"),
+  overrideLot: document.getElementById("overrideLot"),
+  overrideStatus: document.getElementById("overrideStatus"),
+  overrideNote: document.getElementById("overrideNote"),
 };
 
-function readReports() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+function isWeekday(dateValue) {
+  const date = new Date(`${dateValue}T12:00:00`);
+  const day = date.getDay();
+  return day >= 1 && day <= 5;
 }
 
-function saveReports(reports) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+function isDayPermitWindow(timeValue) {
+  return timeValue >= "07:30" && timeValue < "17:00";
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+function classifyLot(lot) {
+  const override = overrides.get(lot.name.toLowerCase());
+  if (override) return override;
 
-function toDisplayDate(isoDateTime) {
-  if (!isoDateTime) return "—";
-  const date = new Date(isoDateTime);
-  if (Number.isNaN(date.getTime())) return isoDateTime;
-  return date.toLocaleString();
-}
+  const date = els.dateInput.value;
+  const time = els.timeInput.value;
+  const weekday = isWeekday(date);
+  const inDayWindow = isDayPermitWindow(time);
+  const hasPermit = els.permitStatus.value === "has";
+  const isVisitor = els.userType.value === "visitor";
+  const specialEvent = els.eventMode.checked;
 
-function renderReports() {
-  const reports = readReports();
-  els.reservedBody.innerHTML = "";
-
-  if (reports.length === 0) {
-    els.reservedBody.innerHTML = '<tr><td colspan="6">No reserved lot reports yet.</td></tr>';
-    return;
+  if (specialEvent && lot.eventSensitive) {
+    return { status: "reserved", reason: "Marked event-sensitive and event mode is enabled." };
   }
 
-  reports
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .forEach((report) => {
-      const tr = document.createElement("tr");
-      const accurate = report.reviews?.accurate ?? 0;
-      const inaccurate = report.reviews?.inaccurate ?? 0;
-      const score = accurate - inaccurate;
+  if (lot.rule === "paid") {
+    return {
+      status: "open",
+      reason: "Pay-to-park lot; generally available when spaces exist.",
+    };
+  }
 
-      tr.innerHTML = `
-        <td>${escapeHtml(report.lot_name)}</td>
-        <td>${escapeHtml(toDisplayDate(report.reserved_until))}</td>
-        <td>${escapeHtml(report.reporter || "—")}</td>
-        <td>${escapeHtml(report.note || "—")}</td>
-        <td>
-          <div class="review-box">
-            <span class="score">Score: ${score}</span>
-            <button class="vote-btn" data-id="${report.id}" data-vote="accurate">✅ Accurate (${accurate})</button>
-            <button class="vote-btn" data-id="${report.id}" data-vote="inaccurate">❌ Inaccurate (${inaccurate})</button>
-          </div>
-        </td>
-        <td><button class="remove-btn danger" data-id="${report.id}">Remove</button></td>
-      `;
-      els.reservedBody.appendChild(tr);
-    });
+  if (lot.rule === "permit") {
+    if (weekday && inDayWindow && !hasPermit) {
+      return {
+        status: "reserved",
+        reason: "Permit typically required weekdays 7:30am–5:00pm.",
+      };
+    }
 
-  document.querySelectorAll(".remove-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const reports = readReports().filter((x) => x.id !== btn.dataset.id);
-      saveReports(reports);
-      renderReports();
-    });
+    if (weekday && inDayWindow && hasPermit) {
+      return {
+        status: "open",
+        reason: "Permit holder during daytime control window.",
+      };
+    }
+
+    if (!weekday || !inDayWindow) {
+      return {
+        status: isVisitor ? "limited" : "open",
+        reason: isVisitor
+          ? "May open after 5pm/weekends, but signage or events can still restrict access."
+          : "Often more open after 5pm/weekends unless specially reserved.",
+      };
+    }
+  }
+
+  return { status: "limited", reason: "Check posted signs." };
+}
+
+function render() {
+  els.lotsBody.innerHTML = "";
+
+  let openCount = 0;
+  let reservedCount = 0;
+  let limitedCount = 0;
+
+  lots.forEach((lot) => {
+    const classification = classifyLot(lot);
+    if (classification.status === "open") openCount += 1;
+    if (classification.status === "reserved") reservedCount += 1;
+    if (classification.status === "limited") limitedCount += 1;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${lot.name}</td>
+      <td>${lot.rule === "paid" ? "Paid Visitor" : "Permit Daytime"}${lot.eventSensitive ? " + Event Sensitive" : ""}</td>
+      <td class="status-${classification.status}">${classification.status.toUpperCase()}</td>
+      <td>${lot.notes} ${classification.reason}</td>
+    `;
+    els.lotsBody.appendChild(tr);
   });
 
-  document.querySelectorAll(".vote-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const reports = readReports();
-      const found = reports.find((x) => x.id === btn.dataset.id);
-      if (!found) return;
-
-      found.reviews = found.reviews || { accurate: 0, inaccurate: 0 };
-      if (btn.dataset.vote === "accurate") found.reviews.accurate += 1;
-      if (btn.dataset.vote === "inaccurate") found.reviews.inaccurate += 1;
-
-      saveReports(reports);
-      renderReports();
-    });
-  });
+  els.summary.textContent = `Open: ${openCount} | Reserved: ${reservedCount} | Limited: ${limitedCount}`;
 }
 
-els.form.addEventListener("submit", (event) => {
-  event.preventDefault();
+function setDefaultDate() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  els.dateInput.value = `${yyyy}-${mm}-${dd}`;
+}
 
-  const lotName = els.lotName.value.trim();
-  if (!lotName) {
-    els.formMessage.textContent = "Lot name is required.";
-    return;
+els.recalcBtn.addEventListener("click", render);
+[els.dateInput, els.timeInput, els.userType, els.permitStatus, els.eventMode].forEach((el) => {
+  el.addEventListener("change", render);
+});
+
+els.overrideForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const lotKey = els.overrideLot.value.trim().toLowerCase();
+  if (!lotKey) return;
+
+  overrides.set(lotKey, {
+    status: els.overrideStatus.value,
+    reason: els.overrideNote.value.trim() || "User override.",
+  });
+
+  if (!lots.find((x) => x.name.toLowerCase() === lotKey)) {
+    lots.push({
+      name: els.overrideLot.value.trim(),
+      rule: "permit",
+      eventSensitive: false,
+      notes: "User-added lot.",
+    });
   }
 
-  const report = {
-    id: crypto.randomUUID(),
-    lot_name: lotName,
-    reserved_until: els.reservedUntil.value ? new Date(els.reservedUntil.value).toISOString() : "",
-    reporter: els.reporter.value.trim(),
-    note: els.note.value.trim(),
-    created_at: new Date().toISOString(),
-    reviews: { accurate: 0, inaccurate: 0 },
-  };
-
-  const reports = readReports();
-  reports.push(report);
-  saveReports(reports);
-
-  els.form.reset();
-  els.formMessage.textContent = "Report added.";
-  renderReports();
+  els.overrideForm.reset();
+  render();
 });
 
-els.exportBtn.addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(readReports(), null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "unc-reserved-lot-reports.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-els.importInput.addEventListener("change", async () => {
-  const file = els.importInput.files?.[0];
-  if (!file) return;
-
-  try {
-    const text = await file.text();
-    const parsed = JSON.parse(text);
-    if (!Array.isArray(parsed)) throw new Error("Invalid format");
-    saveReports(parsed);
-    els.formMessage.textContent = "Imported reports.";
-    renderReports();
-  } catch {
-    els.formMessage.textContent = "Could not import JSON.";
-  }
-
-  els.importInput.value = "";
-});
-
-els.clearAllBtn.addEventListener("click", () => {
-  saveReports([]);
-  renderReports();
-});
-
-renderReports();
+setDefaultDate();
+render();

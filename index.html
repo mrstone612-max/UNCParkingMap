@@ -3,66 +3,101 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UNC Reserved Parking Tracker</title>
+    <title>UNC Parking Lot Availability</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header>
-      <h1>UNC Reserved Parking Tracker</h1>
-      <p>GitHub Pages version: reports are saved in your browser and can be shared/exported.</p>
+      <h1>UNC-Chapel Hill Parking Lot Status</h1>
+      <p>
+        Built using UNC parking policy patterns from
+        <a href="https://move.unc.edu/parking/" target="_blank" rel="noreferrer">move.unc.edu</a>
+        plus your live inputs.
+      </p>
     </header>
 
     <main>
-      <section class="card">
-        <h2>Report a reserved lot</h2>
-        <form id="reservationForm" class="grid">
+      <section class="controls card">
+        <h2>Check availability by time</h2>
+        <div class="grid">
           <label>
-            Parking lot name
-            <input id="lotName" required placeholder="e.g., Bell Tower Deck" />
-          </label>
-          <label>
-            Reserved until (optional)
-            <input id="reservedUntil" type="datetime-local" />
+            Date
+            <input id="dateInput" type="date" />
           </label>
           <label>
-            Reporter (optional)
-            <input id="reporter" placeholder="Your name" />
+            Time
+            <input id="timeInput" type="time" value="13:00" />
           </label>
-          <label class="span-2">
-            Note (optional)
-            <input id="note" placeholder="e.g., Reserved for basketball event" />
+          <label>
+            You are...
+            <select id="userType">
+              <option value="student">Student</option>
+              <option value="visitor">Visitor</option>
+              <option value="staff">Faculty/Staff</option>
+            </select>
           </label>
-          <button type="submit">Add Report</button>
-        </form>
-        <div class="toolbar">
-          <button id="exportBtn" type="button">Export Reports (JSON)</button>
-          <label class="import-label">
-            Import Reports
-            <input id="importInput" type="file" accept="application/json" />
+          <label>
+            Permit status
+            <select id="permitStatus">
+              <option value="none">No permit</option>
+              <option value="has">Has UNC permit</option>
+            </select>
           </label>
-          <button id="clearAllBtn" type="button" class="danger">Clear All</button>
         </div>
-        <p id="formMessage" class="note"></p>
+        <div class="inline-actions">
+          <label class="checkbox-label">
+            <input id="eventMode" type="checkbox" />
+            Special event currently active (lots marked event-sensitive may be reserved)
+          </label>
+          <button id="recalcBtn" type="button">Update Status</button>
+        </div>
       </section>
 
       <section class="card">
-        <h2>Reported reserved lots</h2>
-        <p class="note">Only user-reported lots are listed. Each entry can be reviewed as accurate/inaccurate by others.</p>
+        <h2>Campus parking lots</h2>
+        <p class="note">
+          Rule legend: <strong>Paid Visitor</strong> = open all day with payment;
+          <strong>Permit Daytime</strong> = permit required weekdays 7:30am–5:00pm, often more open afterward;
+          <strong>Event Sensitive</strong> = may become reserved during games/events.
+        </p>
+        <div id="summary" class="summary"></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Lot</th>
-                <th>Reserved Until</th>
-                <th>Reporter</th>
-                <th>Note</th>
-                <th>Reviews</th>
-                <th>Actions</th>
+                <th>Default Rule</th>
+                <th>Current Status</th>
+                <th>Notes</th>
               </tr>
             </thead>
-            <tbody id="reservedBody"></tbody>
+            <tbody id="lotsBody"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="card">
+        <h2>Add / override a lot</h2>
+        <p class="note">Use this when move.unc.edu announces temporary closures, event reservations, or temporary access changes.</p>
+        <form id="overrideForm" class="grid">
+          <label>
+            Lot name
+            <input id="overrideLot" required />
+          </label>
+          <label>
+            Override status
+            <select id="overrideStatus">
+              <option value="open">Open</option>
+              <option value="reserved">Reserved</option>
+              <option value="limited">Limited / Check signs</option>
+            </select>
+          </label>
+          <label class="span-2">
+            Note
+            <input id="overrideNote" placeholder="e.g., Reserved for basketball from 5pm" />
+          </label>
+          <button type="submit">Save Override</button>
+        </form>
       </section>
     </main>
 

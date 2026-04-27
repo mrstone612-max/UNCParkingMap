@@ -1,29 +1,52 @@
-# UNC Reserved Parking Tracker (GitHub Pages)
+# UNC Reserved Parking Tracker
 
-This version is designed for **GitHub Pages** (static hosting, no backend required).
+This app now shows **only lots that users mark as reserved**.
 
-## Behavior
+## What changed
 
-- The site only shows lots users report as reserved.
-- Each report has community review buttons:
-  - ✅ Accurate
-  - ❌ Inaccurate
-- Reports are stored in browser `localStorage`.
-- Users can export/import reports as JSON for sharing across devices.
+- Removed the pre-seeded/all-lot listing.
+- Added a SQLite database to persist user-reported reserved lots.
+- Added APIs to create/list/clear reserved-lot reports.
 
-## Deploy to GitHub Pages
+## Run locally
 
-1. Push this repository to GitHub.
-2. Go to **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select your branch and root folder (`/`).
-5. Save. GitHub will publish `index.html`.
+```bash
+python3 server.py
+```
 
-## Local run
+Then open `http://localhost:8000`.
 
-Just open `index.html` in a browser.
+## Data model
+
+Database file: `parking.db`
+
+Table: `reservations`
+- `id`
+- `lot_name`
+- `note`
+- `reporter`
+- `reserved_until`
+- `created_at`
+# UNC Parking Map (Student Availability Helper)
+
+Simple static website that estimates whether UNC-Chapel Hill parking lots are **open, reserved, or limited** based on:
+
+- General parking patterns from `move.unc.edu` (visitor-paid vs permit daytime windows).
+- User inputs (date, time, student/visitor, permit ownership, and event mode).
+- User overrides for temporary closures/reservations.
+
+## Run locally
+
+Because this is a static site, you can just open `index.html` directly, or use a local web server:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit `http://localhost:8000`.
 
 ## Notes
 
-- Because GitHub Pages is static, storage is per-browser unless users export/import JSON.
-- This tool is crowd-reported and should be verified against posted signage and official UNC announcements.
+- This tool is for planning and does **not** replace posted lot signage.
+- Event days can change access quickly; use the **special event toggle** and per-lot overrides.
+- Keep lot statuses updated with official announcements from move.unc.edu.
